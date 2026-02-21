@@ -82,18 +82,27 @@ processBtn.addEventListener('click', async () => {
     });
   }
 
-  downloadAllBtn.disabled = processedFiles.length === 0;
+  downloadAllBtn.disabled = queuedFiles.length === 0;
   renderResults();
 });
 
 downloadAllBtn.addEventListener('click', async () => {
-  if (processedFiles.length === 0) {
+  if (queuedFiles.length === 0) {
     return;
   }
 
   const zip = new JSZip();
-  processedFiles.forEach((entry) => {
-    zip.file(entry.renamed, entry.blob);
+
+  const modifiedByPath = new Map(processedFiles.map((entry) => [entry.sourcePath, entry]));
+
+  queuedFiles.forEach((entry) => {
+    const modified = modifiedByPath.get(entry.sourcePath);
+    if (modified) {
+      zip.file(buildArchivePath(entry.sourcePath, modified.renamed), modified.blob);
+      return;
+    }
+
+    zip.file(entry.sourcePath, entry.file);
   });
 
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
@@ -236,6 +245,15 @@ function buildVersionedName(filename, version) {
   const ext = dot >= 0 ? filename.slice(dot) : '';
   const base = rawBase.replace(/-v\d+$/i, '');
   return `${base}-v${version}${ext}`;
+}
+
+function buildArchivePath(sourcePath, outputFilename) {
+  const slashIndex = sourcePath.lastIndexOf('/');
+  if (slashIndex < 0) {
+    return outputFilename;
+  }
+
+  return `${sourcePath.slice(0, slashIndex + 1)}${outputFilename}`;
 }
 
 function extractVersionFromFilename(filename) {
