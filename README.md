@@ -1,13 +1,15 @@
 # findandreplace
 
-Aplicație web statică pentru încărcarea simultană a mai multor fișiere `.csv` și `.tsv`, căutare/înlocuire text în toate fișierele și descărcarea rezultatelor redenumite incremental (`_v001`, `_v002`, etc.).
+Aplicație web pentru încărcarea simultană a mai multor fișiere `.csv` și `.tsv`, căutare/înlocuire text în toate fișierele și descărcarea rezultatelor redenumite incremental (`_v001`, `_v002`, etc.).
 
 ## Rulare locală
 
-Fiind o aplicație statică, poți porni rapid un server local:
-
 ```bash
-python3 -m http.server 8000
+npm start
 ```
 
-Apoi deschide `http://localhost:8000` în browser.
+Serverul pornește implicit pe `http://localhost:4173` (sau pe portul din variabila `PORT`).
+
+## De ce apărea `Not Found` în Preview
+
+Am adăugat un server Node (`server.js`) și scriptul `npm start` ca Preview-ul să poată porni aplicația automat și să servească `index.html` la ruta `/`.
