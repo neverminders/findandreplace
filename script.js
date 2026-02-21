@@ -229,8 +229,9 @@ function mergeQueuedFiles(entries) {
 
 function buildVersionedName(filename, version) {
   const dot = filename.lastIndexOf('.');
-  const base = dot >= 0 ? filename.slice(0, dot) : filename;
+  const rawBase = dot >= 0 ? filename.slice(0, dot) : filename;
   const ext = dot >= 0 ? filename.slice(dot) : '';
+  const base = rawBase.replace(/-v\d+$/i, '');
   return `${base}-v${version}${ext}`;
 }
 
