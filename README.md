@@ -1,6 +1,15 @@
 # findandreplace
 
-Aplicație web pentru încărcarea simultană a mai multor fișiere `.csv` și `.tsv`, căutare/înlocuire text în toate fișierele și descărcarea rezultatelor redenumite incremental (`_v001`, `_v002`, etc.).
+Aplicație web pentru încărcarea simultană a mai multor fișiere `.csv` și `.tsv`, cu reguli multiple de search/replace, procesare în lot și descărcare **doar** a fișierelor modificate.
+
+## Funcționalități
+
+- upload multiplu de fișiere CSV/TSV
+- upload de folder (cu subfoldere, unde browserul permite)
+- drag & drop pentru fișiere/foldere
+- mai multe reguli de search/replace în aceeași procesare
+- versionare incrementală per fișier modificat (`_v1`, `_v2`, `_v3` etc.)
+- incrementarea versiunii se face numai când fișierul chiar a fost modificat
 
 ## Acces online pe GitHub (GitHub Pages)
 

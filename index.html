@@ -9,27 +9,25 @@
 <body>
   <main class="container">
     <h1>Find & Replace pentru CSV/TSV</h1>
-    <p class="subtitle">Încarcă mai multe fișiere, aplică înlocuirea pe toate simultan și descarcă rezultatele redenumite incremental.</p>
+    <p class="subtitle">Încarcă fișiere CSV/TSV, definește mai multe reguli de înlocuire și descarcă doar fișierele modificate, versionate incremental per fișier.</p>
 
     <section class="panel">
       <label for="fileInput" class="label">Fișiere sursă (.csv, .tsv)</label>
       <input id="fileInput" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" multiple />
+      <label for="folderInput" class="label top-gap">Folder sursă (include subfoldere, dacă browserul suportă)</label>
+      <input id="folderInput" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" webkitdirectory directory multiple />
+      <div id="dropZone" class="drop-zone" aria-label="Drop zone fișiere sau foldere">
+        Trage aici fișiere sau foldere cu CSV/TSV
+      </div>
       <small id="fileHint">Nu ai selectat încă fișiere.</small>
     </section>
 
-    <section class="panel grid">
-      <label>
-        Text căutat
-        <input id="findInput" type="text" placeholder="Ex: București" />
-      </label>
-      <label>
-        Text de înlocuit
-        <input id="replaceInput" type="text" placeholder="Ex: Cluj-Napoca" />
-      </label>
-      <label class="checkbox-row">
-        <input id="caseSensitive" type="checkbox" />
-        Căutare case sensitive
-      </label>
+    <section class="panel">
+      <div class="rules-header">
+        <h2>Reguli Search / Replace</h2>
+        <button id="addRuleBtn" type="button">+ Adaugă regulă</button>
+      </div>
+      <div id="rulesContainer" class="rules-container"></div>
     </section>
 
     <section class="panel actions">
@@ -38,10 +36,28 @@
     </section>
 
     <section class="panel">
-      <h2>Coada de rezultate</h2>
+      <h2>Coada de rezultate (doar fișiere modificate)</h2>
       <ul id="resultList" class="result-list"></ul>
     </section>
   </main>
+
+  <template id="ruleTemplate">
+    <div class="rule-row">
+      <label>
+        Text căutat
+        <input class="find-input" type="text" placeholder="Ex: București" />
+      </label>
+      <label>
+        Text de înlocuit
+        <input class="replace-input" type="text" placeholder="Ex: Cluj-Napoca" />
+      </label>
+      <label class="checkbox-row">
+        <input class="case-sensitive-input" type="checkbox" />
+        Case sensitive
+      </label>
+      <button class="remove-rule-btn" type="button">Șterge</button>
+    </div>
+  </template>
 
   <template id="resultItemTemplate">
     <li class="result-item">
