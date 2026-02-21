@@ -1,5 +1,3 @@
-const fileInput = document.getElementById('fileInput');
-const folderInput = document.getElementById('folderInput');
 const dropZone = document.getElementById('dropZone');
 const addRuleBtn = document.getElementById('addRuleBtn');
 const rulesContainer = document.getElementById('rulesContainer');
@@ -16,17 +14,7 @@ const fileVersions = new Map();
 
 addRule();
 
-fileInput.addEventListener('change', () => {
-  mergeQueuedFiles([...fileInput.files]);
-});
-
-folderInput.addEventListener('change', () => {
-  mergeQueuedFiles([...folderInput.files]);
-});
-
-addRuleBtn.addEventListener('click', () => {
-  addRule();
-});
+addRuleBtn.addEventListener('click', () => addRule());
 
 dropZone.addEventListener('dragover', (event) => {
   event.preventDefault();
@@ -41,8 +29,8 @@ dropZone.addEventListener('drop', async (event) => {
   event.preventDefault();
   dropZone.classList.remove('active');
 
-  const droppedFiles = await collectDroppedFiles(event.dataTransfer);
-  mergeQueuedFiles(droppedFiles);
+  const droppedEntries = await collectDroppedFiles(event.dataTransfer);
+  mergeQueuedFiles(droppedEntries);
 });
 
 processBtn.addEventListener('click', async () => {
@@ -55,10 +43,9 @@ processBtn.addEventListener('click', async () => {
     return;
   }
 
-  for (const file of queuedFiles) {
-    const sourcePath = file.webkitRelativePath || file.name;
-    const original = await file.text();
-    let updatedContent = original;
+  for (const entry of queuedFiles) {
+    const decoded = await readTextWithEncoding(entry.file);
+    let updatedContent = decoded.text;
     let totalReplacements = 0;
 
     for (const rule of rules) {
@@ -73,21 +60,22 @@ processBtn.addEventListener('click', async () => {
       continue;
     }
 
-    const nextVersion = (fileVersions.get(sourcePath) || 0) + 1;
-    fileVersions.set(sourcePath, nextVersion);
+    const nextVersion = (fileVersions.get(entry.sourcePath) || 0) + 1;
+    fileVersions.set(entry.sourcePath, nextVersion);
 
-    const renamed = buildVersionedName(file.name, nextVersion);
-    const blob = new Blob([updatedContent], { type: file.type || 'text/plain;charset=utf-8' });
+    const renamed = buildVersionedName(entry.file.name, nextVersion);
+    const encoded = encodeText(updatedContent, decoded.encoding, decoded.hasBom);
+    const blob = new Blob([encoded], { type: entry.file.type || 'text/plain' });
     const url = URL.createObjectURL(blob);
 
     processedFiles.push({
-      originalName: file.name,
-      sourcePath,
+      sourcePath: entry.sourcePath,
       renamed,
       version: nextVersion,
       replacements: totalReplacements,
       size: blob.size,
       url,
+      encoding: decoded.encodingLabel,
     });
   }
 
@@ -120,9 +108,7 @@ function addRule() {
 }
 
 function getValidRules() {
-  const rows = [...rulesContainer.querySelectorAll('.rule-row')];
-
-  return rows
+  return [...rulesContainer.querySelectorAll('.rule-row')]
     .map((row) => ({
       search: row.querySelector('.find-input').value,
       replacement: row.querySelector('.replace-input').value,
@@ -132,38 +118,37 @@ function getValidRules() {
 }
 
 async function collectDroppedFiles(dataTransfer) {
-  const files = [];
+  const entries = [];
 
   if (dataTransfer.items && dataTransfer.items.length > 0) {
-    const readTasks = [...dataTransfer.items].map((item) => {
-      const entry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
-      if (!entry) {
-        const file = item.getAsFile();
-        return file ? Promise.resolve([file]) : Promise.resolve([]);
-      }
-      return readEntryRecursive(entry);
-    });
+    const tasks = [...dataTransfer.items]
+      .filter((item) => item.kind === 'file')
+      .map(async (item) => {
+        const fsEntry = item.webkitGetAsEntry ? item.webkitGetAsEntry() : null;
+        if (!fsEntry) {
+          const file = item.getAsFile();
+          if (!file) {
+            return [];
+          }
+          return [{ file, sourcePath: file.name }];
+        }
+        return readEntryRecursive(fsEntry);
+      });
 
-    const nested = await Promise.all(readTasks);
-    nested.forEach((group) => files.push(...group));
-    return files;
+    const nestedResults = await Promise.all(tasks);
+    nestedResults.forEach((group) => entries.push(...group));
+    return entries;
   }
 
-  return [...dataTransfer.files];
+  return [...dataTransfer.files].map((file) => ({ file, sourcePath: file.name }));
 }
 
 function readEntryRecursive(entry, parentPath = '') {
   if (entry.isFile) {
     return new Promise((resolve) => {
       entry.file((file) => {
-        const relativePath = parentPath ? `${parentPath}/${file.name}` : file.name;
-        if (!file.webkitRelativePath) {
-          Object.defineProperty(file, 'webkitRelativePath', {
-            value: relativePath,
-            configurable: true,
-          });
-        }
-        resolve([file]);
+        const sourcePath = parentPath ? `${parentPath}/${file.name}` : file.name;
+        resolve([{ file, sourcePath }]);
       });
     });
   }
@@ -175,17 +160,17 @@ function readEntryRecursive(entry, parentPath = '') {
   return new Promise((resolve) => {
     const reader = entry.createReader();
     const collected = [];
+    const currentPath = parentPath ? `${parentPath}/${entry.name}` : entry.name;
 
     const readBatch = () => {
-      reader.readEntries(async (entries) => {
-        if (!entries.length) {
+      reader.readEntries(async (batch) => {
+        if (!batch.length) {
           resolve(collected);
           return;
         }
 
-        for (const child of entries) {
-          const childPath = parentPath ? `${parentPath}/${entry.name}` : entry.name;
-          const nested = await readEntryRecursive(child, childPath);
+        for (const child of batch) {
+          const nested = await readEntryRecursive(child, currentPath);
           collected.push(...nested);
         }
 
@@ -197,12 +182,12 @@ function readEntryRecursive(entry, parentPath = '') {
   });
 }
 
-function mergeQueuedFiles(inputFiles) {
-  const valid = inputFiles.filter((file) => /\.(csv|tsv)$/i.test(file.name));
-  const unique = new Map(queuedFiles.map((file) => [file.webkitRelativePath || file.name, file]));
+function mergeQueuedFiles(entries) {
+  const valid = entries.filter((entry) => /\.(csv|tsv)$/i.test(entry.file.name));
+  const unique = new Map(queuedFiles.map((entry) => [entry.sourcePath, entry]));
 
-  valid.forEach((file) => {
-    unique.set(file.webkitRelativePath || file.name, file);
+  valid.forEach((entry) => {
+    unique.set(entry.sourcePath, entry);
   });
 
   queuedFiles = [...unique.values()];
@@ -222,7 +207,7 @@ function buildVersionedName(filename, version) {
   const dot = filename.lastIndexOf('.');
   const base = dot >= 0 ? filename.slice(0, dot) : filename;
   const ext = dot >= 0 ? filename.slice(dot) : '';
-  return `${base}_v${version}${ext}`;
+  return `${base}-v${version}${ext}`;
 }
 
 function escapeRegExp(value) {
@@ -238,6 +223,111 @@ function countOccurrences(content, search, isCaseSensitive) {
   const flags = isCaseSensitive ? 'g' : 'gi';
   const matches = content.match(new RegExp(escapeRegExp(search), flags));
   return matches ? matches.length : 0;
+}
+
+async function readTextWithEncoding(file) {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const probe = detectEncoding(bytes);
+  const text = new TextDecoder(probe.decoderLabel).decode(bytes.subarray(probe.offset));
+
+  return {
+    text,
+    encoding: probe.encoding,
+    encodingLabel: probe.encodingLabel,
+    hasBom: probe.hasBom,
+  };
+}
+
+function detectEncoding(bytes) {
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return {
+      encoding: 'utf-16le',
+      encodingLabel: 'UTF-16 LE',
+      decoderLabel: 'utf-16le',
+      hasBom: true,
+      offset: 2,
+    };
+  }
+
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return {
+      encoding: 'utf-16be',
+      encodingLabel: 'UTF-16 BE',
+      decoderLabel: 'utf-16be',
+      hasBom: true,
+      offset: 2,
+    };
+  }
+
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return {
+      encoding: 'utf-8',
+      encodingLabel: 'UTF-8 (BOM)',
+      decoderLabel: 'utf-8',
+      hasBom: true,
+      offset: 3,
+    };
+  }
+
+  return {
+    encoding: 'utf-8',
+    encodingLabel: 'UTF-8',
+    decoderLabel: 'utf-8',
+    hasBom: false,
+    offset: 0,
+  };
+}
+
+function encodeText(text, encoding, withBom) {
+  if (encoding === 'utf-16le') {
+    return encodeUtf16(text, false, withBom);
+  }
+
+  if (encoding === 'utf-16be') {
+    return encodeUtf16(text, true, withBom);
+  }
+
+  const body = new TextEncoder().encode(text);
+  if (!withBom) {
+    return body;
+  }
+
+  const out = new Uint8Array(body.length + 3);
+  out.set([0xef, 0xbb, 0xbf], 0);
+  out.set(body, 3);
+  return out;
+}
+
+function encodeUtf16(text, bigEndian, withBom) {
+  const units = new Uint16Array(text.length);
+  for (let index = 0; index < text.length; index += 1) {
+    units[index] = text.charCodeAt(index);
+  }
+
+  const body = new Uint8Array(units.length * 2);
+  for (let index = 0; index < units.length; index += 1) {
+    const value = units[index];
+    const byteIndex = index * 2;
+
+    if (bigEndian) {
+      body[byteIndex] = (value >> 8) & 0xff;
+      body[byteIndex + 1] = value & 0xff;
+    } else {
+      body[byteIndex] = value & 0xff;
+      body[byteIndex + 1] = (value >> 8) & 0xff;
+    }
+  }
+
+  if (!withBom) {
+    return body;
+  }
+
+  const bom = bigEndian ? [0xfe, 0xff] : [0xff, 0xfe];
+  const out = new Uint8Array(body.length + 2);
+  out.set(bom, 0);
+  out.set(body, 2);
+  return out;
 }
 
 function formatBytes(bytes) {
@@ -273,7 +363,7 @@ function renderResults() {
     const linkNode = fragment.querySelector('.download-link');
 
     filenameNode.textContent = `${entry.sourcePath} → ${entry.renamed}`;
-    metaNode.textContent = `Versiune: ${entry.version} • Înlocuiri: ${entry.replacements} • Mărime: ${formatBytes(entry.size)}`;
+    metaNode.textContent = `Versiune: ${entry.version} • Înlocuiri: ${entry.replacements} • Encoding: ${entry.encoding} • Mărime: ${formatBytes(entry.size)}`;
     linkNode.href = entry.url;
     linkNode.download = entry.renamed;
 

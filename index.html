@@ -9,17 +9,14 @@
 <body>
   <main class="container">
     <h1>Find & Replace pentru CSV/TSV</h1>
-    <p class="subtitle">Încarcă fișiere CSV/TSV, definește mai multe reguli de înlocuire și descarcă doar fișierele modificate, versionate incremental per fișier.</p>
+    <p class="subtitle">Trage fișiere/foldere CSV/TSV în zona de drop, aplică mai multe reguli și descarcă doar fișierele modificate.</p>
 
     <section class="panel">
-      <label for="fileInput" class="label">Fișiere sursă (.csv, .tsv)</label>
-      <input id="fileInput" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" multiple />
-      <label for="folderInput" class="label top-gap">Folder sursă (include subfoldere, dacă browserul suportă)</label>
-      <input id="folderInput" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" webkitdirectory directory multiple />
-      <div id="dropZone" class="drop-zone" aria-label="Drop zone fișiere sau foldere">
-        Trage aici fișiere sau foldere cu CSV/TSV
+      <div id="dropZone" class="drop-zone" aria-label="Drop zone fișiere sau foldere" tabindex="0">
+        <strong>Trage aici fișiere sau foldere CSV/TSV</strong>
+        <p>(Browserul va include și subfolderele când API-ul de drag&drop permite.)</p>
       </div>
-      <small id="fileHint">Nu ai selectat încă fișiere.</small>
+      <small id="fileHint">Nu ai adăugat încă fișiere.</small>
     </section>
 
     <section class="panel">

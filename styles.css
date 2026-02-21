@@ -45,16 +45,7 @@ h1 { margin-bottom: 0.25rem; }
   margin-bottom: 1rem;
 }
 
-.label {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.top-gap { margin-top: 1rem; }
-
-input[type="text"],
-input[type="file"] {
+input[type="text"] {
   width: 100%;
   margin-top: 0.35rem;
   padding: 0.6rem;
@@ -65,12 +56,20 @@ input[type="file"] {
 }
 
 .drop-zone {
-  margin-top: 1rem;
   border: 2px dashed var(--border);
   border-radius: 0.75rem;
   padding: 1rem;
   text-align: center;
-  font-weight: 600;
+}
+
+.drop-zone strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.drop-zone p {
+  margin: 0;
+  opacity: 0.85;
 }
 
 .drop-zone.active {
