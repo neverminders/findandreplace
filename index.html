@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV/TSV Find & Replace</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Find & Replace pentru CSV/TSV</h1>
+    <p class="subtitle">Trage fișiere/foldere CSV/TSV în zona de drop, aplică mai multe reguli și descarcă doar fișierele modificate.</p>
+
+    <section class="panel">
+      <div id="dropZone" class="drop-zone" aria-label="Drop zone fișiere sau foldere" tabindex="0">
+        <strong>Trage aici fișiere sau foldere CSV/TSV</strong>
+        <p>(Browserul va include și subfolderele când API-ul de drag&drop permite.)</p>
+      </div>
+      <small id="fileHint">Nu ai adăugat încă fișiere.</small>
+    </section>
+
+    <section class="panel">
+      <div class="rules-header">
+        <h2>Reguli Search / Replace</h2>
+        <button id="addRuleBtn" type="button">+ Adaugă regulă</button>
+      </div>
+      <div id="rulesContainer" class="rules-container"></div>
+    </section>
+
+    <section class="panel actions">
+      <button id="processBtn" disabled>Procesează fișierele</button>
+      <button id="downloadAllBtn" disabled>Descarcă toate fișierele modificate</button>
+    </section>
+
+    <section class="panel">
+      <h2>Coada de rezultate (doar fișiere modificate)</h2>
+      <ul id="resultList" class="result-list"></ul>
+    </section>
+  </main>
+
+  <template id="ruleTemplate">
+    <div class="rule-row">
+      <label>
+        Text căutat
+        <input class="find-input" type="text" placeholder="Ex: București" />
+      </label>
+      <label>
+        Text de înlocuit
+        <input class="replace-input" type="text" placeholder="Ex: Cluj-Napoca" />
+      </label>
+      <label class="checkbox-row">
+        <input class="case-sensitive-input" type="checkbox" />
+        Case sensitive
+      </label>
+      <button class="remove-rule-btn" type="button">Șterge</button>
+    </div>
+  </template>
+
+  <template id="resultItemTemplate">
+    <li class="result-item">
+      <div>
+        <p class="filename"></p>
+        <small class="meta"></small>
+      </div>
+      <a class="download-link" download>Descarcă</a>
+    </li>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
