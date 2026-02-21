@@ -281,20 +281,27 @@ function buildSearchRule(searchValue, isCaseSensitive) {
   return {
     regex: new RegExp(pattern, flags),
     type,
+    needle: normalized,
   };
 }
 
-function getReplacementValue(ruleType, replacement) {
-  if (ruleType === 'startsWith') {
-    return `${replacement}$1`;
+function matchReplacementCase(replacement, sourceToken) {
+  if (!sourceToken) {
+    return replacement;
   }
 
-  if (ruleType === 'endsWith') {
-    return `$1${replacement}`;
+  if (sourceToken === sourceToken.toUpperCase()) {
+    return replacement.toUpperCase();
   }
 
-  if (ruleType === 'contains') {
-    return `$1${replacement}$2`;
+  if (sourceToken === sourceToken.toLowerCase()) {
+    return replacement.toLowerCase();
+  }
+
+  const isTitleCase = sourceToken[0] === sourceToken[0].toUpperCase()
+    && sourceToken.slice(1) === sourceToken.slice(1).toLowerCase();
+  if (isTitleCase) {
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1).toLowerCase();
   }
 
   return replacement;
@@ -306,7 +313,38 @@ function replaceAll(content, search, replacement, isCaseSensitive) {
     return content;
   }
 
-  return content.replace(rule.regex, getReplacementValue(rule.type, replacement));
+  return content.replace(rule.regex, (matched, groupOne = '', groupTwo = '') => {
+    const suffix = groupOne || '';
+    const prefix = groupOne || '';
+    const tail = groupTwo || '';
+
+    let sourceToken = matched;
+    if (rule.type === 'startsWith') {
+      sourceToken = matched.slice(0, matched.length - suffix.length);
+    } else if (rule.type === 'endsWith') {
+      sourceToken = matched.slice(prefix.length);
+    } else if (rule.type === 'contains') {
+      sourceToken = matched.slice(prefix.length, matched.length - tail.length);
+    }
+
+    const replacementWithCase = isCaseSensitive
+      ? replacement
+      : matchReplacementCase(replacement, sourceToken || rule.needle);
+
+    if (rule.type === 'startsWith') {
+      return `${replacementWithCase}${suffix}`;
+    }
+
+    if (rule.type === 'endsWith') {
+      return `${prefix}${replacementWithCase}`;
+    }
+
+    if (rule.type === 'contains') {
+      return `${prefix}${replacementWithCase}${tail}`;
+    }
+
+    return replacementWithCase;
+  });
 }
 
 function countOccurrences(content, search, isCaseSensitive) {
