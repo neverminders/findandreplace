@@ -59,7 +59,10 @@ processBtn.addEventListener('click', async () => {
       continue;
     }
 
-    const nextVersion = (fileVersions.get(entry.sourcePath) || 0) + 1;
+    const currentVersion = fileVersions.has(entry.sourcePath)
+      ? fileVersions.get(entry.sourcePath)
+      : extractVersionFromFilename(entry.file.name);
+    const nextVersion = currentVersion + 1;
     fileVersions.set(entry.sourcePath, nextVersion);
 
     const renamed = buildVersionedName(entry.file.name, nextVersion);
@@ -233,6 +236,13 @@ function buildVersionedName(filename, version) {
   const ext = dot >= 0 ? filename.slice(dot) : '';
   const base = rawBase.replace(/-v\d+$/i, '');
   return `${base}-v${version}${ext}`;
+}
+
+function extractVersionFromFilename(filename) {
+  const dot = filename.lastIndexOf('.');
+  const rawBase = dot >= 0 ? filename.slice(0, dot) : filename;
+  const match = rawBase.match(/-v(\d+)$/i);
+  return match ? Number.parseInt(match[1], 10) : 0;
 }
 
 function escapeRegExp(value) {
