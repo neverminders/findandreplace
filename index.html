@@ -1,58 +1,64 @@
 <!DOCTYPE html>
-<html lang="ro">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CSV/TSV Find & Replace</title>
+  <title>Replace Multiple Strings in .csv, .tsv Files</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="container">
-    <h1>Find & Replace pentru CSV/TSV</h1>
-    <p class="subtitle">Trage fișiere/foldere CSV/TSV în zona de drop, aplică mai multe reguli și descarcă doar fișierele modificate.</p>
+    <h1>Replace Multiple Strings in .csv, .tsv Files</h1>
+    <p class="subtitle">Drop CSV/TSV files or folders, apply multiple replacement rules, and download only modified files.</p>
 
     <section class="panel">
-      <div id="dropZone" class="drop-zone" aria-label="Drop zone fișiere sau foldere" tabindex="0">
-        <strong>Trage aici fișiere sau foldere CSV/TSV</strong>
-        <p>(Browserul va include și subfolderele când API-ul de drag&drop permite.)</p>
+      <div id="dropZone" class="drop-zone" aria-label="Drop zone for files or folders" tabindex="0">
+        <strong>Drop CSV/TSV files or folders here</strong>
+        <p>(Subfolders are included when supported by your browser drag-and-drop APIs.)</p>
       </div>
-      <small id="fileHint">Nu ai adăugat încă fișiere.</small>
+      <small id="fileHint">No files added yet.</small>
     </section>
 
     <section class="panel">
       <div class="rules-header">
-        <h2>Reguli Search / Replace</h2>
-        <button id="addRuleBtn" type="button">+ Adaugă regulă</button>
+        <h2>Search / Replace Rules</h2>
+        <button id="addRuleBtn" type="button">+ Add Rule</button>
       </div>
+      <p class="rules-help">Patterns: <code>string</code> (whole word), <code>string*</code> (keep suffix), <code>*string</code> (keep prefix), <code>*string*</code> (keep both).</p>
       <div id="rulesContainer" class="rules-container"></div>
     </section>
 
     <section class="panel actions">
-      <button id="processBtn" disabled>Procesează fișierele</button>
-      <button id="downloadAllBtn" disabled>Descarcă toate fișierele modificate</button>
+      <button id="processBtn" disabled>Process Files</button>
+      <button id="downloadAllBtn" disabled>Download All Modified Files</button>
     </section>
 
     <section class="panel">
-      <h2>Coada de rezultate (doar fișiere modificate)</h2>
+      <h2>Results Queue (modified files only)</h2>
       <ul id="resultList" class="result-list"></ul>
     </section>
   </main>
 
+  <footer class="footer">
+    <p id="copyrightLine"></p>
+    <p><a href="https://nevermind.ro" target="_blank" rel="noopener noreferrer">nevermind</a></p>
+  </footer>
+
   <template id="ruleTemplate">
     <div class="rule-row">
       <label>
-        Text căutat
-        <input class="find-input" type="text" placeholder="Ex: București" />
+        Find text
+        <input class="find-input" type="text" placeholder="e.g. Bucharest" />
       </label>
       <label>
-        Text de înlocuit
-        <input class="replace-input" type="text" placeholder="Ex: Cluj-Napoca" />
+        Replace with
+        <input class="replace-input" type="text" placeholder="e.g. Cluj-Napoca" />
       </label>
       <label class="checkbox-row">
         <input class="case-sensitive-input" type="checkbox" />
         Case sensitive
       </label>
-      <button class="remove-rule-btn" type="button">Șterge</button>
+      <button class="remove-rule-btn" type="button">Remove</button>
     </div>
   </template>
 
@@ -62,7 +68,7 @@
         <p class="filename"></p>
         <small class="meta"></small>
       </div>
-      <a class="download-link" download>Descarcă</a>
+      <a class="download-link" download>Download</a>
     </li>
   </template>
 

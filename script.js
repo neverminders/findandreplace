@@ -7,11 +7,13 @@ const resultList = document.getElementById('resultList');
 const fileHint = document.getElementById('fileHint');
 const ruleTemplate = document.getElementById('ruleTemplate');
 const resultTemplate = document.getElementById('resultItemTemplate');
+const copyrightLine = document.getElementById('copyrightLine');
 
 let queuedFiles = [];
 let processedFiles = [];
 const fileVersions = new Map();
 
+setFooterCopyright();
 addRule();
 
 addRuleBtn.addEventListener('click', () => addRule());
@@ -39,7 +41,7 @@ processBtn.addEventListener('click', async () => {
 
   const rules = getValidRules();
   if (rules.length === 0) {
-    alert('Adaugă cel puțin o regulă validă cu text căutat.');
+    alert('Add at least one valid rule with a search string.');
     return;
   }
 
@@ -197,8 +199,8 @@ function mergeQueuedFiles(entries) {
   processedFiles = [];
 
   fileHint.textContent = queuedFiles.length
-    ? `${queuedFiles.length} fișiere csv/tsv în coadă.`
-    : 'Nu există fișiere csv/tsv valide în selecție.';
+    ? `${queuedFiles.length} CSV/TSV files queued.`
+    : 'No valid CSV/TSV files found in your drop.';
 
   renderResults();
 }
@@ -214,15 +216,71 @@ function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function buildSearchRule(searchValue, isCaseSensitive) {
+  const hasLeadingStar = searchValue.startsWith('*');
+  const hasTrailingStar = searchValue.endsWith('*');
+  const normalized = searchValue.replace(/^\*/, '').replace(/\*$/, '');
+
+  if (!normalized) {
+    return null;
+  }
+
+  const escaped = escapeRegExp(normalized);
+  const wordChars = '[\\p{L}\\p{N}_]*';
+
+  let pattern = `\\b${escaped}\\b`;
+  let type = 'whole';
+
+  if (hasLeadingStar && hasTrailingStar) {
+    pattern = `\\b(${wordChars})${escaped}(${wordChars})\\b`;
+    type = 'contains';
+  } else if (hasLeadingStar) {
+    pattern = `\\b(${wordChars})${escaped}\\b`;
+    type = 'endsWith';
+  } else if (hasTrailingStar) {
+    pattern = `\\b${escaped}(${wordChars})\\b`;
+    type = 'startsWith';
+  }
+
+  const flags = `gu${isCaseSensitive ? '' : 'i'}`;
+  return {
+    regex: new RegExp(pattern, flags),
+    type,
+  };
+}
+
+function getReplacementValue(ruleType, replacement) {
+  if (ruleType === 'startsWith') {
+    return `${replacement}$1`;
+  }
+
+  if (ruleType === 'endsWith') {
+    return `$1${replacement}`;
+  }
+
+  if (ruleType === 'contains') {
+    return `$1${replacement}$2`;
+  }
+
+  return replacement;
+}
+
 function replaceAll(content, search, replacement, isCaseSensitive) {
-  const flags = isCaseSensitive ? 'g' : 'gi';
-  return content.replace(new RegExp(escapeRegExp(search), flags), replacement);
+  const rule = buildSearchRule(search, isCaseSensitive);
+  if (!rule) {
+    return content;
+  }
+
+  return content.replace(rule.regex, getReplacementValue(rule.type, replacement));
 }
 
 function countOccurrences(content, search, isCaseSensitive) {
-  const flags = isCaseSensitive ? 'g' : 'gi';
-  const matches = content.match(new RegExp(escapeRegExp(search), flags));
-  return matches ? matches.length : 0;
+  const rule = buildSearchRule(search, isCaseSensitive);
+  if (!rule) {
+    return 0;
+  }
+
+  return [...content.matchAll(rule.regex)].length;
 }
 
 async function readTextWithEncoding(file) {
@@ -351,7 +409,7 @@ function renderResults() {
 
   if (processedFiles.length === 0) {
     const empty = document.createElement('li');
-    empty.textContent = 'Nu există fișiere modificate încă.';
+    empty.textContent = 'No modified files yet.';
     resultList.appendChild(empty);
     return;
   }
@@ -363,10 +421,17 @@ function renderResults() {
     const linkNode = fragment.querySelector('.download-link');
 
     filenameNode.textContent = `${entry.sourcePath} → ${entry.renamed}`;
-    metaNode.textContent = `Versiune: ${entry.version} • Înlocuiri: ${entry.replacements} • Encoding: ${entry.encoding} • Mărime: ${formatBytes(entry.size)}`;
+    metaNode.textContent = `Version: ${entry.version} • Replacements: ${entry.replacements} • Encoding: ${entry.encoding} • Size: ${formatBytes(entry.size)}`;
     linkNode.href = entry.url;
     linkNode.download = entry.renamed;
 
     resultList.appendChild(fragment);
   });
+}
+
+function setFooterCopyright() {
+  const startYear = 2026;
+  const currentYear = new Date().getFullYear();
+  const yearLabel = currentYear > startYear ? `${startYear}–${currentYear}` : `${startYear}`;
+  copyrightLine.innerHTML = `© Copyright ${yearLabel} <a href="https://github.com/neverminders" target="_blank" rel="noopener noreferrer">Lucian Mărgărit</a> | <a href="./LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a>`;
 }

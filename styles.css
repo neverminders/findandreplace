@@ -87,6 +87,19 @@ input[type="text"] {
 
 .rules-header h2 { margin: 0; }
 
+
+.rules-help {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  opacity: 0.9;
+}
+
+.rules-help code {
+  background: color-mix(in oklab, var(--accent) 20%, transparent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.35rem;
+}
+
 .rules-container {
   display: grid;
   gap: 0.75rem;
@@ -156,3 +169,26 @@ button:disabled {
 
 .filename { margin: 0; font-weight: 600; }
 .meta { opacity: 0.8; }
+
+
+.footer {
+  max-width: 980px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.footer p {
+  margin: 0.15rem 0;
+}
+
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
