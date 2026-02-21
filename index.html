@@ -22,15 +22,14 @@
     <section class="panel">
       <div class="rules-header">
         <h2>Search / Replace Rules</h2>
-        <button id="addRuleBtn" type="button">+ Add Rule</button>
       </div>
-      <p class="rules-help">Patterns: <code>string</code> (whole word), <code>string*</code> (keep suffix), <code>*string</code> (keep prefix), <code>*string*</code> (keep both).</p>
+      <p class="rules-help">Patterns: <code>string</code> (whole word), <code>string*</code> (keep suffix), <code>*string</code> (keep prefix), <code>*string*</code> (keep both). A new rule row is added automatically when the last row is filled.</p>
       <div id="rulesContainer" class="rules-container"></div>
     </section>
 
     <section class="panel actions">
       <button id="processBtn" disabled>Process Files</button>
-      <button id="downloadAllBtn" disabled>Download All Modified Files</button>
+      <button id="downloadAllBtn" disabled>Download All (ZIP)</button>
     </section>
 
     <section class="panel">
@@ -72,6 +71,7 @@
     </li>
   </template>
 
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

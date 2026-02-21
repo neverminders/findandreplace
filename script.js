@@ -1,5 +1,4 @@
 const dropZone = document.getElementById('dropZone');
-const addRuleBtn = document.getElementById('addRuleBtn');
 const rulesContainer = document.getElementById('rulesContainer');
 const processBtn = document.getElementById('processBtn');
 const downloadAllBtn = document.getElementById('downloadAllBtn');
@@ -15,8 +14,6 @@ const fileVersions = new Map();
 
 setFooterCopyright();
 addRule();
-
-addRuleBtn.addEventListener('click', () => addRule());
 
 dropZone.addEventListener('dragover', (event) => {
   event.preventDefault();
@@ -77,6 +74,7 @@ processBtn.addEventListener('click', async () => {
       replacements: totalReplacements,
       size: blob.size,
       url,
+      blob,
       encoding: decoded.encodingLabel,
     });
   }
@@ -85,34 +83,58 @@ processBtn.addEventListener('click', async () => {
   renderResults();
 });
 
-downloadAllBtn.addEventListener('click', () => {
+downloadAllBtn.addEventListener('click', async () => {
+  if (processedFiles.length === 0) {
+    return;
+  }
+
+  const zip = new JSZip();
   processedFiles.forEach((entry) => {
-    const link = document.createElement('a');
-    link.href = entry.url;
-    link.download = entry.renamed;
-    link.click();
+    zip.file(entry.renamed, entry.blob);
   });
+
+  const archiveBlob = await zip.generateAsync({ type: 'blob' });
+  const zipUrl = URL.createObjectURL(archiveBlob);
+  const link = document.createElement('a');
+  link.href = zipUrl;
+  link.download = `modified-files-${new Date().toISOString().slice(0, 10)}.zip`;
+  link.click();
+  URL.revokeObjectURL(zipUrl);
 });
 
 function addRule() {
   const fragment = ruleTemplate.content.cloneNode(true);
   const ruleRow = fragment.querySelector('.rule-row');
   const removeBtn = fragment.querySelector('.remove-rule-btn');
+  const findInput = fragment.querySelector('.find-input');
 
   removeBtn.addEventListener('click', () => {
     if (rulesContainer.children.length === 1) {
       return;
     }
     ruleRow.remove();
+    ensureTrailingEmptyRule();
+  });
+
+  findInput.addEventListener('input', () => {
+    ensureTrailingEmptyRule();
   });
 
   rulesContainer.appendChild(fragment);
 }
 
+function ensureTrailingEmptyRule() {
+  const rows = [...rulesContainer.querySelectorAll('.rule-row')];
+  const hasEmpty = rows.some((row) => row.querySelector('.find-input').value.trim() === '');
+  if (!hasEmpty) {
+    addRule();
+  }
+}
+
 function getValidRules() {
   return [...rulesContainer.querySelectorAll('.rule-row')]
     .map((row) => ({
-      search: row.querySelector('.find-input').value,
+      search: row.querySelector('.find-input').value.trim(),
       replacement: row.querySelector('.replace-input').value,
       isCaseSensitive: row.querySelector('.case-sensitive-input').checked,
     }))
