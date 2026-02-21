@@ -82,27 +82,19 @@ processBtn.addEventListener('click', async () => {
     });
   }
 
-  downloadAllBtn.disabled = queuedFiles.length === 0;
+  downloadAllBtn.disabled = processedFiles.length === 0;
   renderResults();
 });
 
 downloadAllBtn.addEventListener('click', async () => {
-  if (queuedFiles.length === 0) {
+  if (processedFiles.length === 0) {
     return;
   }
 
   const zip = new JSZip();
 
-  const modifiedByPath = new Map(processedFiles.map((entry) => [entry.sourcePath, entry]));
-
-  queuedFiles.forEach((entry) => {
-    const modified = modifiedByPath.get(entry.sourcePath);
-    if (modified) {
-      zip.file(buildArchivePath(entry.sourcePath, modified.renamed), modified.blob);
-      return;
-    }
-
-    zip.file(entry.sourcePath, entry.file);
+  processedFiles.forEach((entry) => {
+    zip.file(buildArchivePath(entry.sourcePath, entry.renamed), entry.blob);
   });
 
   const archiveBlob = await zip.generateAsync({ type: 'blob' });
