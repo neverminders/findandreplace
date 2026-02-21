@@ -226,19 +226,21 @@ function buildSearchRule(searchValue, isCaseSensitive) {
   }
 
   const escaped = escapeRegExp(normalized);
-  const wordChars = '[\\p{L}\\p{N}_]*';
+  const wordPart = '[\\p{L}\\p{N}_]*';
+  const leftBoundary = '(?<![\\p{L}\\p{N}_])';
+  const rightBoundary = '(?![\\p{L}\\p{N}_])';
 
-  let pattern = `\\b${escaped}\\b`;
+  let pattern = `${leftBoundary}${escaped}${rightBoundary}`;
   let type = 'whole';
 
   if (hasLeadingStar && hasTrailingStar) {
-    pattern = `\\b(${wordChars})${escaped}(${wordChars})\\b`;
+    pattern = `${leftBoundary}(${wordPart})${escaped}(${wordPart})${rightBoundary}`;
     type = 'contains';
   } else if (hasLeadingStar) {
-    pattern = `\\b(${wordChars})${escaped}\\b`;
+    pattern = `${leftBoundary}(${wordPart})${escaped}${rightBoundary}`;
     type = 'endsWith';
   } else if (hasTrailingStar) {
-    pattern = `\\b${escaped}(${wordChars})\\b`;
+    pattern = `${leftBoundary}${escaped}(${wordPart})${rightBoundary}`;
     type = 'startsWith';
   }
 
